@@ -40,6 +40,25 @@ class MLPEnc(nn.Module):
 
       return x
 
+class ConvEnc(nn.Module):
+  def __init__(self, conv_depth, kernel_size, dropout_rate):
+    super(ConvEnc, self).__init__()
+    self.conv = nn.LazyConv1d(conv_depth, kernel_size)
+    self.batch_norm = nn.BatchNorm1d(conv_depth)
+    self.dropout = nn.Dropout(dropout_rate)
+
+    self.flatten = nn.Flatten()
+
+  def forward(self, x):
+    x = self.conv(x)
+    x = F.relu(x)
+    x = self.batch_norm(x)
+    x = self.dropout(x)
+    x = self.flatten(x)
+
+    return x
+
+
 class FC_Classifier(torch.nn.Module):
     def __init__(self, num_classes, num_hidden_layers=1, hidden_dim=256, drop_prob=0.2):
         super(FC_Classifier, self).__init__()
@@ -84,9 +103,12 @@ def grad_reverse(x,alpha=1.):
     return GradReverse.apply(x,alpha)
 
 class XModelv5(nn.Module):
-  def __init__(self, hidden_dim=256, dropout_rate=0.3, nb_classes=3, n_doms=5):
+  def __init__(self, encoder_type = 'MLP', hidden_dim=256, dropout_rate=0.3, nb_classes=3, n_doms=5):
     super(XModelv5, self).__init__()
-    self.enc_inv = MLPEnc(hidden_dim=hidden_dim, dropout_rate=dropout_rate)
+    if encoder_type == 'MLP':
+        self.enc_inv = MLPEnc(hidden_dim=hidden_dim, dropout_rate=dropout_rate)
+    elif:
+        self.enc_inv = ConvEnc(conv_depth=50, kernel_size=3, dropout_rate=0.2)
 
     self.cl = nn.LazyLinear(nb_classes)
     self.cl_dom_adv = FC_Classifier(n_doms, num_hidden_layers=2)
